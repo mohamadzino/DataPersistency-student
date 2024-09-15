@@ -155,11 +155,16 @@ FROM medewerkers
 -- onder de hoede van De Koning. Kies een personeelnummer boven de 8000.
 -- Zorg voor de juiste invoer van deze gegevens.
 INSERT
+INTO afdelingen (anr, naam, locatie)
+VALUES (50, 'FINANCIEN', 'LEERDAM')
 ON CONFLICT DO NOTHING;                                                                                         -- [TEST]
 
 INSERT
+INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, afd)
+VALUES (8500, 'Winters', 'E', 'MANAGER', 7839, date ('2000-01-01'), 1000.00, 50)
 ON CONFLICT DO NOTHING;                                                                                         -- [TEST]
-
+UPDATE afdelingen
+set hoofd = 8500 where anr = 50;
 
 
 -- -------------------------[ HU TESTRAAMWERK ]--------------------------------
