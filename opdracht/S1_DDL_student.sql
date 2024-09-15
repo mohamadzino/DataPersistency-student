@@ -34,7 +34,13 @@
 -- die ervoor zorgt dat alleen 'M' of 'V' als geldige waarde wordt
 -- geaccepteerd. Test deze regel en neem de gegooide foutmelding op als
 -- commentaar in de uitwerking.
-
+alter table medewerkers
+    add column geslacht char(1) not null;
+alter table medewerkers
+    add constraint m_geslacht_chk check (geslacht in ('M', 'V'));
+--[2024-09-13 19:26:18] [23502] ERROR: column "geslacht" of relation "medewerkers" contains null values
+--[2024-09-13 19:26:18] [42703] ERROR: column "geslacht" does not exist
+--Deze foutmeldingen kunnen opgelost worden door een default waarde toe te voegen, bv. geslacht char(1) default 'M'
 
 -- S1.2. Nieuwe afdeling
 --
@@ -43,6 +49,14 @@
 -- nieuwe medewerker A DONK aangenomen. Hij krijgt medewerkersnummer 8000
 -- en valt direct onder de directeur.
 -- Voeg de nieuwe afdeling en de nieuwe medewerker toe aan de database.
+
+insert into afdelingen (anr, naam, locatie)
+    values (50, 'ONDERZOEK', 'ZWOLLE');
+insert into medewerkers (mnr, naam, voorl, chef, gbdatum, maandsal, afd)
+    values (8000, 'DONK', 'A', 7839, date('1985-1-1'), 800.00, 50);
+UPDATE afdelingen
+    set hoofd = 8000 where anr = 50;
+
 
 
 -- S1.3. Verbetering op afdelingentabel
@@ -54,6 +68,23 @@
 --      de nieuwe sequence.
 --   c) Op enig moment gaat het mis. De betreffende kolommen zijn te klein voor
 --      nummers van 3 cijfers. Los dit probleem op.
+alter table afdelingen
+    alter
+        column anr type numeric(3);
+create sequence afdeling_seq
+    start with 60 increment by 10;
+insert into afdelingen (anr, naam, locatie, hoofd)
+    values (nextval('afdeling_seq'), 'MANAGING', 'ZWOLLE', 7839);
+insert into afdelingen (anr, naam, locatie, hoofd)
+values (nextval('afdeling_seq'), 'MARKETING', 'ZWOLLE', 7839);
+insert into afdelingen (anr, naam, locatie, hoofd)
+values (nextval('afdeling_seq'), 'SALES', 'ZWOLLE', 7839);
+insert into afdelingen (anr, naam, locatie, hoofd)
+values (nextval('afdeling_seq'), 'FINANCE', 'ZWOLLE', 7839);
+insert into afdelingen (anr, naam, locatie, hoofd)
+values (nextval('afdeling_seq'), 'PRODUCTION', 'ZWOLLE', 7839);
+
+drop sequence afdeling_seq;
 
 
 -- S1.4. Adressen
@@ -68,6 +99,22 @@
 --    einddatum     moet na de ingangsdatum liggen
 --    telefoon      10 cijfers, uniek
 --    med_mnr       FK, verplicht
+create table adressen
+(
+    postcode char(6) not null,
+    huisnummer numeric(4) not null,
+    ingangsdatum date not null,
+    einddatum date,
+    telefoon char(10) not null,
+    med_mnr numeric(4) not null,
+    constraint adressen_pk primary key (postcode, huisnummer, ingangsdatum),
+    constraint adressen_fk foreign key (med_mnr) references medewerkers (mnr),
+    constraint adressen_postcode_chk check (postcode ~ '^[0-9]{4}[A-Z]{2}$'),
+    constraint adressen_einddatum_chk check (einddatum > ingangsdatum),
+    constraint adressen_telefoon_un unique (telefoon)
+        );
+insert into adressen (postcode, huisnummer, ingangsdatum, einddatum, telefoon, med_mnr)
+values ('1234AB', 1, '2020-1-1', '2021-1-1', '0612345678', 8000);
 
 
 -- S1.5. Commissie
@@ -75,12 +122,18 @@
 -- De commissie van een medewerker (kolom `comm`) moet een bedrag bevatten als de medewerker een functie als
 -- 'VERKOPER' heeft, anders moet de commissie NULL zijn. Schrijf hiervoor een beperkingsregel. Gebruik onderstaande
 -- 'illegale' INSERTs om je beperkingsregel te controleren.
-
+alter table medewerkers
+    add constraint medewerkers_comm_chk check (
+        (functie = 'VERKOPER' and comm is not null) or
+        (functie != 'VERKOPER' and comm is null)
+        );
 INSERT INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, comm)
 VALUES (8001, 'MULLER', 'TJ', 'TRAINER', 7566, '1982-08-18', 2000, 500);
 
 INSERT INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, comm)
 VALUES (8002, 'JANSEN', 'M', 'VERKOPER', 7698, '1981-07-17', 1000, NULL);
+alter table medewerkers
+    drop constraint medewerkers_comm_chk;
 
 
 
