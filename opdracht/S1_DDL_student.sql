@@ -34,13 +34,19 @@
 -- die ervoor zorgt dat alleen 'M' of 'V' als geldige waarde wordt
 -- geaccepteerd. Test deze regel en neem de gegooide foutmelding op als
 -- commentaar in de uitwerking.
-alter table medewerkers
-    add column geslacht char(1) not null;
-alter table medewerkers
-    add constraint m_geslacht_chk check (geslacht in ('M', 'V'));
+
+--alter table medewerkers
+--add column geslacht char(1) not null;
+--alter table medewerkers
+--    add constraint m_geslacht_chk check (geslacht in ('M', 'V'));
 --[2024-09-13 19:26:18] [23502] ERROR: column "geslacht" of relation "medewerkers" contains null values
 --[2024-09-13 19:26:18] [42703] ERROR: column "geslacht" does not exist
 --Deze foutmeldingen kunnen opgelost worden door een default waarde toe te voegen, bv. geslacht char(1) default 'M'
+alter table medewerkers
+    add column geslacht char(1) not null default 'M';
+alter table medewerkers
+    add constraint m_geslacht_chk check (geslacht in ('M', 'V'));
+
 
 -- S1.2. Nieuwe afdeling
 --
@@ -68,6 +74,8 @@ UPDATE afdelingen
 --      de nieuwe sequence.
 --   c) Op enig moment gaat het mis. De betreffende kolommen zijn te klein voor
 --      nummers van 3 cijfers. Los dit probleem op.
+-- AI gebruikt om op de drop view s3_4 en create view s3_4 aan te komen
+drop view s3_4;
 alter table afdelingen
     alter
         column anr type numeric(3);
@@ -85,7 +93,6 @@ insert into afdelingen (anr, naam, locatie, hoofd)
 values (nextval('afdeling_seq'), 'PRODUCTION', 'ZWOLLE', 7839);
 
 drop sequence afdeling_seq;
-
 
 -- S1.4. Adressen
 --
@@ -127,11 +134,11 @@ alter table medewerkers
         (functie = 'VERKOPER' and comm is not null) or
         (functie != 'VERKOPER' and comm is null)
         );
-INSERT INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, comm)
-VALUES (8001, 'MULLER', 'TJ', 'TRAINER', 7566, '1982-08-18', 2000, 500);
+--INSERT INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, comm)
+--VALUES (8001, 'MULLER', 'TJ', 'TRAINER', 7566, '1982-08-18', 2000, 500);
 
-INSERT INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, comm)
-VALUES (8002, 'JANSEN', 'M', 'VERKOPER', 7698, '1981-07-17', 1000, NULL);
+--INSERT INTO medewerkers (mnr, naam, voorl, functie, chef, gbdatum, maandsal, comm)
+--VALUES (8002, 'JANSEN', 'M', 'VERKOPER', 7698, '1981-07-17', 1000, NULL);
 alter table medewerkers
     drop constraint medewerkers_comm_chk;
 
@@ -161,3 +168,12 @@ DELETE FROM afdelingen WHERE anr > 40;
 DELETE FROM medewerkers WHERE mnr < 7369 OR mnr > 7934;
 ALTER TABLE medewerkers DROP CONSTRAINT IF EXISTS m_geslacht_chk;
 ALTER TABLE medewerkers DROP COLUMN IF EXISTS geslacht;
+alter table afdelingen
+    alter
+        column anr type numeric(2);
+create view s3_4 as  SELECT (((medewerkers.voorl)::text || '. '::text) || (medewerkers.naam)::text) AS mdw_naam,
+                            afdelingen.naam AS afd_naam,
+                            afdelingen.locatie
+                     FROM (afdelingen
+                         JOIN medewerkers ON ((afdelingen.anr = medewerkers.afd)));
+

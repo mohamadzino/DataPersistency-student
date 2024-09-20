@@ -144,9 +144,9 @@ WHERE afd IN (SELECT anr FROM afdelingen WHERE naam = 'VERKOOP');
 DELETE
 FROM medewerkers
     WHERE naam = 'MARTENS';
-DELETE
-FROM medewerkers
-    WHERE naam = 'ALDERS';
+--DELETE
+--FROM medewerkers
+--    WHERE naam = 'ALDERS';
 -- Alders kan niet verwijderd worden omdat hij gekoppeld is aan tabel inschrijvingen.
 
 -- S2.11. Nieuwe afdeling
