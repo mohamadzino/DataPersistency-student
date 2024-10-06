@@ -36,7 +36,7 @@ select mnr, functie, gbdatum from medewerkers
 -- S4.2. 
 -- Geef de naam van de medewerkers met een tussenvoegsel (b.v. 'van der').
 DROP VIEW IF EXISTS s4_2; CREATE OR REPLACE VIEW s4_2 AS                                                     -- [TEST]
-select voorl || '. ' || naam as mdw_naam from medewerkers where naam like '% %';
+select naam as mdw_naam from medewerkers where naam like '% %';
 
 -- S4.3. 
 -- Geef nu code, begindatum en aantal inschrijvingen (`aantal_inschrijvingen`) van alle
@@ -44,8 +44,7 @@ select voorl || '. ' || naam as mdw_naam from medewerkers where naam like '% %';
 DROP VIEW IF EXISTS s4_3; CREATE OR REPLACE VIEW s4_3 AS                                                     -- [TEST]
 select cursussen.code, inschrijvingen.begindatum, count(*) as aantal_inschrijvingen
 from cursussen
-         inner join uitvoeringen on cursussen.code = uitvoeringen.cursus
-         inner join inschrijvingen on uitvoeringen.cursus = inschrijvingen.cursus
+         inner join inschrijvingen on cursussen.code = inschrijvingen.cursus
 where inschrijvingen.begindatum between '2019-01-01' and '2019-12-31'
 group by cursussen.code, inschrijvingen.begindatum
 having count (*) >= 3;
@@ -92,9 +91,9 @@ from medewerkers;
 -- krijgen (`commissie_medewerkers`), en hoeveel dat gemiddeld
 -- per verkoper is (`commissie_verkopers`).
 DROP VIEW IF EXISTS s4_7; CREATE OR REPLACE VIEW s4_7 AS                                                     -- [TEST]
-select count(*) as aantal_medewerkers, avg(comm) as commissie_medewerkers, avg(comm) as commissie_verkopers
-from medewerkers
-where functie = 'VERKOPER';
+select count(*) as aantal_medewerkers, avg(coalesce(comm, 0)) as commissie_medewerkers,
+       (SELECT AVG(comm) FROM medewerkers WHERE functie = 'VERKOPER') as commissie_verkopers
+from medewerkers;
 
 
 -- -------------------------[ HU TESTRAAMWERK ]--------------------------------
