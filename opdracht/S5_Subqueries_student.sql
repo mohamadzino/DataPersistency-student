@@ -31,50 +31,92 @@
 -- S5.1.
 -- Welke medewerkers hebben zowel de Java als de XML cursus
 -- gevolgd? Geef hun personeelsnummers.
--- DROP VIEW IF EXISTS s5_1; CREATE OR REPLACE VIEW s5_1 AS                                                     -- [TEST]
-
+DROP VIEW IF EXISTS s5_1; CREATE OR REPLACE VIEW s5_1 AS                                                     -- [TEST]
+select inschrijvingen.cursist from inschrijvingen inner join uitvoeringen on inschrijvingen.cursus = uitvoeringen.cursus and
+inschrijvingen.begindatum = uitvoeringen.begindatum where uitvoeringen.cursus = 'JAV' or uitvoeringen.cursus = 'XML'
+group by inschrijvingen.cursist
+having count(distinct uitvoeringen.cursus) = 2;
 
 -- S5.2.
 -- Geef de nummers van alle medewerkers die niet aan de afdeling 'OPLEIDINGEN'
 -- zijn verbonden.
--- DROP VIEW IF EXISTS s5_2; CREATE OR REPLACE VIEW s5_2 AS                                                     -- [TEST]
+DROP VIEW IF EXISTS s5_2; CREATE OR REPLACE VIEW s5_2 AS                                                     -- [TEST]
+select medewerkers.mnr from medewerkers inner join afdelingen on
+    medewerkers.afd = afdelingen.anr and afdelingen.naam != 'OPLEIDINGEN';
 
 
 -- S5.3.
 -- Geef de nummers van alle medewerkers die de Java-cursus niet hebben
 -- gevolgd.
--- DROP VIEW IF EXISTS s5_3; CREATE OR REPLACE VIEW s5_3 AS                                                     -- [TEST]
+DROP VIEW IF EXISTS s5_3; CREATE OR REPLACE VIEW s5_3 AS                                                     -- [TEST]
+select medewerkers.mnr
+from medewerkers
+where medewerkers.mnr not in (
+    select inschrijvingen.cursist
+    from inschrijvingen
+    where inschrijvingen.cursus = 'JAV');
 
 
 -- S5.4.
 -- a. Welke medewerkers hebben ondergeschikten? Geef hun naam.
--- DROP VIEW IF EXISTS s5_4a; CREATE OR REPLACE VIEW s5_4a AS                                                   -- [TEST]
+DROP VIEW IF EXISTS s5_4a; CREATE OR REPLACE VIEW s5_4a AS                                                   -- [TEST]
+select medewerkers.naam
+from medewerkers
+inner join medewerkers as medewerkers_ondergeschikt on medewerkers.mnr = medewerkers_ondergeschikt.chef
+where medewerkers_ondergeschikt.chef is not null;
 
 -- b. En welke medewerkers hebben geen ondergeschikten? Geef wederom de naam.
--- DROP VIEW IF EXISTS s5_4b; CREATE OR REPLACE VIEW s5_4b AS                                                   -- [TEST]
+DROP VIEW IF EXISTS s5_4b; CREATE OR REPLACE VIEW s5_4b AS                                                   -- [TEST]
+select medewerkers.naam
+from medewerkers
+left join medewerkers as medewerkers_ondergeschikt
+on medewerkers.mnr = medewerkers_ondergeschikt.chef
+where medewerkers_ondergeschikt.chef is null;
 
 
 -- S5.5.
 -- Geef cursuscode en begindatum van alle uitvoeringen van programmeercursussen
 -- ('BLD') in 2020.
--- DROP VIEW IF EXISTS s5_5; CREATE OR REPLACE VIEW s5_5 AS                                                     -- [TEST]
+DROP VIEW IF EXISTS s5_5; CREATE OR REPLACE VIEW s5_5 AS                                                     -- [TEST]
+select cursussen.code, uitvoeringen.begindatum
+from cursussen inner join uitvoeringen on cursussen.code = uitvoeringen.cursus
+where cursussen.type = 'BLD' and uitvoeringen.begindatum between '2020-01-01' and '2020-12-31';
 
 
 -- S5.6.
 -- Geef van alle cursusuitvoeringen: de cursuscode, de begindatum en het
 -- aantal inschrijvingen (`aantal_inschrijvingen`). Sorteer op begindatum.
--- DROP VIEW IF EXISTS s5_6; CREATE OR REPLACE VIEW s5_6 AS                                                     -- [TEST]
+DROP VIEW IF EXISTS s5_6; CREATE OR REPLACE VIEW s5_6 AS                                                     -- [TEST]
+select cursussen.code, uitvoeringen.begindatum, count(inschrijvingen.cursist) as aantal_inschrijvingen
+from cursussen
+inner join uitvoeringen on cursussen.code = uitvoeringen.cursus
+left join inschrijvingen on uitvoeringen.cursus = inschrijvingen.cursus
+and uitvoeringen.begindatum = inschrijvingen.begindatum
+group by cursussen.code, uitvoeringen.begindatum
+order by uitvoeringen.begindatum;
 
 
 -- S5.7.
 -- Geef voorletter(s) en achternaam van alle trainers die ooit tijdens een
 -- algemene ('ALG') cursus hun eigen chef als cursist hebben gehad.
--- DROP VIEW IF EXISTS s5_7; CREATE OR REPLACE VIEW s5_7 AS                                                     -- [TEST]
+DROP VIEW IF EXISTS s5_7; CREATE OR REPLACE VIEW s5_7 AS                                                     -- [TEST]
+select trainers.voorl, trainers.naam
+from medewerkers as trainers
+         inner join uitvoeringen on trainers.mnr = uitvoeringen.docent
+         inner join cursussen on uitvoeringen.cursus = cursussen.code
+         inner join inschrijvingen on inschrijvingen.cursus = cursussen.code
+    and inschrijvingen.begindatum = uitvoeringen.begindatum
+         inner join medewerkers as cursisten on inschrijvingen.cursist = cursisten.mnr
+where trainers.functie = 'TRAINER'
+  and cursussen.type = 'ALG'
+  and cursisten.mnr = trainers.chef;
 
 
 -- S5.8.
 -- Geef de naam van de medewerkers die nog nooit een cursus hebben gegeven.
--- DROP VIEW IF EXISTS s5_8; CREATE OR REPLACE VIEW s5_8 AS                                                     -- [TEST]
+DROP VIEW IF EXISTS s5_8; CREATE OR REPLACE VIEW s5_8 AS                                                     -- [TEST]
+select medewerkers.naam from medewerkers left join uitvoeringen on medewerkers.mnr = uitvoeringen.docent
+where uitvoeringen.docent is null;
 
 
 
